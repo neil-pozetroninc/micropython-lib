@@ -1,4 +1,11 @@
+import ujson
 import usocket
+try:
+    import ussl
+    SUPPORT_SSL = True
+except ImportError:
+    ussl = None
+    SUPPORT_SSL = False
 
 class Response:
 
@@ -6,6 +13,7 @@ class Response:
         self.raw = f
         self.encoding = "utf-8"
         self._cached = None
+        self.etag = None
 
     def close(self):
         if self.raw:
@@ -26,24 +34,21 @@ class Response:
         return str(self.content, self.encoding)
 
     def json(self):
-        import ujson
         return ujson.loads(self.content)
 
 
-def request(method, url, data=None, json=None, headers={}, stream=None):
+def request(method, url, data=None, json=None, headers={}, stream=None, debug=False, out_file=None):
     try:
         proto, dummy, host, path = url.split("/", 3)
     except ValueError:
         proto, dummy, host = url.split("/", 2)
         path = ""
-    if proto == "http:":
+    if proto == 'http:':
         port = 80
-    elif proto == "https:":
-        import ussl
+    elif proto == 'https:':
         port = 443
     else:
-        raise ValueError("Unsupported protocol: " + proto)
-
+        raise OSError('Unsupported protocol: %s' % proto[:-1])
     if ":" in host:
         host, port = host.split(":", 1)
         port = int(port)
@@ -51,47 +56,85 @@ def request(method, url, data=None, json=None, headers={}, stream=None):
     ai = usocket.getaddrinfo(host, port)
     addr = ai[0][4]
     s = usocket.socket()
-    s.connect(addr)
-    if proto == "https:":
-        s = ussl.wrap_socket(s)
-    s.write(b"%s /%s HTTP/1.0\r\n" % (method, path))
-    if not "Host" in headers:
-        s.write(b"Host: %s\r\n" % host)
-    # Iterate over keys to avoid tuple alloc
-    for k in headers:
-        s.write(k)
-        s.write(b": ")
-        s.write(headers[k])
+    try:
+        s.connect(addr)
+        if proto == 'https:':
+            if not SUPPORT_SSL: print('HTTPS not supported: could not find ussl')
+            s = ussl.wrap_socket(s)
+        if debug: 
+            print(b"%s /%s HTTP/1.0\r\n" % (method, path))
+        s.write(b"%s /%s HTTP/1.0\r\n" % (method, path))
+        if not "Host" in headers:
+            if debug: 
+                print(b"Host: %s\r\n" % host)
+            s.write(b"Host: %s\r\n" % host)
+        if json is not None:
+            assert data is None
+            data = ujson.dumps(json)
+            s.write(b'Content-Type: application/json\r\n')
+        # Iterate over keys to avoid tuple alloc
+        for k in headers:
+            s.write(str(k))
+            s.write(b": ")
+            s.write(str(headers[k]))
+            s.write(b"\r\n")
+        if data:
+            if debug: 
+                print(b"Content-Length: %d\r\n" % len(data))
+            s.write(b"Content-Length: %d\r\n" % len(data))
+        if debug: 
+            print(b"\r\n")
         s.write(b"\r\n")
-    if json is not None:
-        assert data is None
-        import ujson
-        data = ujson.dumps(json)
-    if data:
-        s.write(b"Content-Length: %d\r\n" % len(data))
-    s.write(b"\r\n")
-    if data:
-        s.write(data)
+        if data:
+            if debug: 
+                print(data)
+            s.write(data)
 
-    l = s.readline()
-    protover, status, msg = l.split(None, 2)
-    status = int(status)
-    #print(protover, status, msg)
-    while True:
         l = s.readline()
-        if not l or l == b"\r\n":
-            break
-        #print(line)
-        if l.startswith(b"Transfer-Encoding:"):
-            if b"chunked" in line:
-                raise ValueError("Unsupported " + l)
-        elif l.startswith(b"Location:"):
-            raise NotImplementedError("Redirects not yet supported")
+        protover, status, msg = l.split(None, 2)
+        status = int(status)
+        etag = None
+        content_hmac = None
+        date_line = None
+        while True:
+            l = s.readline()
+            if debug:        
+                print(l)
+            if l.startswith(b"Date:"):
+                date_line = str(l[:-2:]).split(' ', 1)[1][:-1:]
+            if l.startswith(b"ETag:"):
+                etag = str(l).split('"')[1].rsplit('"')[0]
+            if l.startswith(b"Content-HMAC:"):
+                content_hmac = str(l).split('"')[1].rsplit('"')[0]
+            if not l or l == b"\r\n":
+                break
 
-    resp = Response(s)
-    resp.status_code = status
-    resp.reason = msg.rstrip()
-    return resp
+            if l.startswith(b"Transfer-Encoding:"):
+                if b"chunked" in line:
+                    raise ValueError("Unsupported " + l)
+            elif l.startswith(b"Location:"):
+                raise NotImplementedError("Redirects not yet supported")
+
+        resp = Response(s)
+        resp.status_code = status
+        resp.reason = msg.rstrip()
+        # This removes a RAM usage optimization but allows us to always close the socket in the finally
+        if out_file:
+            with open(out_file, 'wb') as file:
+                file.write(s.read())
+        else:
+            resp._cached = s.read()
+        if date_line:
+            resp.date = date_line
+        if etag:    
+            resp.etag = etag
+        if content_hmac:
+            resp.content_hmac = content_hmac
+        return resp
+    except OSError as ex:
+        print('Error handling response: {}'.format(ex))
+    finally:
+        s.close()
 
 
 def head(url, **kw):
