@@ -46,12 +46,16 @@ API reference
 Taking into account API traits described above, umqtt pretty closely
 follows MQTT control operations, and maps them to class methods:
 
-* ``connect()`` - Connect to a server.
+* ``connect(...)`` - Connect to a server. Returns True if this connection
+  uses persisten session stored on a server (this will be always False if
+  clean_session=True argument is used (default)).
 * ``disconnect()`` - Disconnect from a server, release resources.
 * ``ping()`` - Ping server (response is processed automatically by wait_msg()).
 * ``publish()`` - Publish a message.
 * ``subscribe()`` - Subscribe to a topic.
 * ``set_callback()`` - Set callback for received subscription messages.
+* ``set_last_will()`` - Set MQTT "last will" message. Should be called
+  *before* connect().
 * ``wait_msg()`` - Wait for a server message. A subscription message will be
   delivered to a callback set with set_callback(), any other messages
   will be processed internally.
