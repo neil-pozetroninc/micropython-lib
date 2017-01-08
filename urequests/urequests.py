@@ -121,7 +121,10 @@ def request(method, url, data=None, json=None, headers={}, stream=None, debug=Fa
         # This removes a RAM usage optimization but allows us to always close the socket in the finally
         if out_file:
             with open(out_file, 'wb') as file:
-                file.write(s.read())
+                buf = s.read(256)
+                while buf:
+                    file.write(buf)
+                    buf = s.read(256)
         else:
             resp._cached = s.read()
         if date_line:
