@@ -1,5 +1,5 @@
 """ Tests for the MicroPython HMAC module """
-from hmac import HMAC, new, compare_digest
+from hmac import HMAC, new #, compare_digest
 import hashlib as _hashlib
 
 # This is the failUnlessEqual method from unittest.TestCase
@@ -124,37 +124,37 @@ def _rfc4231_test_cases(hashfunc, hash_name, digest_size, block_size):
 def test_sha256_rfc4231():
     _rfc4231_test_cases(_hashlib.sha256, 'sha256', 32, 64)
 
-def test_compare_digest():
-    h = new(b'key', b'message', 'sha256')
-    i = new(b'key', b'message', 'sha256')
-    j = new(b'key', b'not the message', 'sha256')
-    digest = b"n\x9e\xf2\x9bu\xff\xfc[z\xba\xe5'\xd5\x8f\xda\xdb/\xe4.r\x19\x01\x19v\x91sC\x06_X\xedJ"
-    not_digest = b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa'
-    hexdigest = b'6e9ef29b75fffc5b7abae527d58fdadb2fe42e7219011976917343065f58ed4a'
-    not_hexdigest = b'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+#def test_compare_digest():
+    #h = new(b'key', b'message', 'sha256')
+    #i = new(b'key', b'message', 'sha256')
+    #j = new(b'key', b'not the message', 'sha256')
+    #digest = b"n\x9e\xf2\x9bu\xff\xfc[z\xba\xe5'\xd5\x8f\xda\xdb/\xe4.r\x19\x01\x19v\x91sC\x06_X\xedJ"
+    #not_digest = b'\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa'
+    #hexdigest = b'6e9ef29b75fffc5b7abae527d58fdadb2fe42e7219011976917343065f58ed4a'
+    #not_hexdigest = b'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
 
-    # Positive Tests
-    assertEqual(compare_digest(h.digest(), i.digest()), True)
-    assertEqual(compare_digest(h.digest(), digest), True)
-    assertEqual(compare_digest(h.hexdigest(), hexdigest), True)
-    assertEqual(compare_digest(h.digest(), i.digest(), double_hmac=False), True)
-    assertEqual(compare_digest(h.digest(), i.digest(), digestmod='sha1'), True)
-    assertEqual(compare_digest(h.hexdigest(), i.hexdigest(), digestmod='sha1'), True)
-    assertEqual(compare_digest(h.hexdigest(), hexdigest, digestmod='sha1'), True)
-    assertEqual(compare_digest(h.digest(), i.digest(), digestmod='sha256'), True)
-    assertEqual(compare_digest(h.digest(), i.digest(), digestmod=b'sha256'), True)
-    assertEqual(compare_digest(h.hexdigest(), i.hexdigest(), digestmod='sha256'), True)
-    assertEqual(compare_digest(h.digest(), digest, digestmod='sha256'), True)
+    ## Positive Tests
+    #assertEqual(compare_digest(h.digest(), i.digest()), True)
+    #assertEqual(compare_digest(h.digest(), digest), True)
+    #assertEqual(compare_digest(h.hexdigest(), hexdigest), True)
+    #assertEqual(compare_digest(h.digest(), i.digest(), double_hmac=False), True)
+    #assertEqual(compare_digest(h.digest(), i.digest(), digestmod='sha1'), True)
+    #assertEqual(compare_digest(h.hexdigest(), i.hexdigest(), digestmod='sha1'), True)
+    #assertEqual(compare_digest(h.hexdigest(), hexdigest, digestmod='sha1'), True)
+    #assertEqual(compare_digest(h.digest(), i.digest(), digestmod='sha256'), True)
+    #assertEqual(compare_digest(h.digest(), i.digest(), digestmod=b'sha256'), True)
+    #assertEqual(compare_digest(h.hexdigest(), i.hexdigest(), digestmod='sha256'), True)
+    #assertEqual(compare_digest(h.digest(), digest, digestmod='sha256'), True)
 
-    # Negative Tests
-    assertEqual(compare_digest(h.digest(), j.digest()), False)
-    assertEqual(compare_digest(h.digest(), not_digest), False)
-    assertEqual(compare_digest(h.hexdigest(), not_hexdigest), False)
-    assertEqual(compare_digest(h.digest(), j.digest(), double_hmac=False), False)
-    assertEqual(compare_digest(h.digest(), j.digest(), digestmod='sha1'), False)
-    assertEqual(compare_digest(h.hexdigest(), j.hexdigest(), digestmod='sha1'), False)
-    assertEqual(compare_digest(h.hexdigest(), not_hexdigest, digestmod='sha1'), False)
-    assertEqual(compare_digest(h.digest(), j.digest(), digestmod='sha256'), False)
-    assertEqual(compare_digest(h.digest(), j.digest(), digestmod=b'sha256'), False)
-    assertEqual(compare_digest(h.hexdigest(), j.hexdigest(), digestmod='sha256'), False)
-    assertEqual(compare_digest(h.digest(), not_digest, digestmod='sha256'), False)
+    ## Negative Tests
+    #assertEqual(compare_digest(h.digest(), j.digest()), False)
+    #assertEqual(compare_digest(h.digest(), not_digest), False)
+    #assertEqual(compare_digest(h.hexdigest(), not_hexdigest), False)
+    #assertEqual(compare_digest(h.digest(), j.digest(), double_hmac=False), False)
+    #assertEqual(compare_digest(h.digest(), j.digest(), digestmod='sha1'), False)
+    #assertEqual(compare_digest(h.hexdigest(), j.hexdigest(), digestmod='sha1'), False)
+    #assertEqual(compare_digest(h.hexdigest(), not_hexdigest, digestmod='sha1'), False)
+    #assertEqual(compare_digest(h.digest(), j.digest(), digestmod='sha256'), False)
+    #assertEqual(compare_digest(h.digest(), j.digest(), digestmod=b'sha256'), False)
+    #assertEqual(compare_digest(h.hexdigest(), j.hexdigest(), digestmod='sha256'), False)
+    #assertEqual(compare_digest(h.digest(), not_digest, digestmod='sha256'), False)
