@@ -1,6 +1,6 @@
 """ Tests for the MicroPython HMAC module """
 from hmac import HMAC, new, compare_digest
-import uhashlib as _hashlib
+import hashlib as _hashlib
 
 # This is the failUnlessEqual method from unittest.TestCase
 def assertEqual(first, second): 
