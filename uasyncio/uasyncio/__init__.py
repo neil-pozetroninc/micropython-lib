@@ -1,4 +1,4 @@
-import errno
+import uerrno
 import uselect as select
 import usocket as _socket
 from uasyncio.core import *
@@ -48,7 +48,7 @@ class EpollEventLoop(EventLoop):
             # and if that succeeds, yield IOWrite may never be called
             # for that socket, and it will never be added to poller. So,
             # ignore such error.
-            if e.args[0] != errno.ENOENT:
+            if e.args[0] != uerrno.ENOENT:
                 raise
 
     def wait(self, delay):
@@ -79,8 +79,8 @@ class StreamReader:
         self.s = s
 
     def read(self, n=-1):
-        yield IORead(self.s)
         while True:
+            yield IORead(self.s)
             res = self.s.read(n)
             if res is not None:
                 break
@@ -89,22 +89,36 @@ class StreamReader:
             yield IOReadDone(self.s)
         return res
 
+    def readexactly(self, n):
+        buf = b""
+        while n:
+            yield IORead(self.s)
+            res = self.s.read(n)
+            assert res is not None
+            if not res:
+                yield IOReadDone(self.s)
+                break
+            buf += res
+            n -= len(res)
+        return buf
+
     def readline(self):
         if __debug__:
             log.debug("StreamReader.readline()")
-        yield IORead(self.s)
-#        if DEBUG and __debug__:
-#            log.debug("StreamReader.readline(): after IORead: %s", s)
+        buf = b""
         while True:
+            yield IORead(self.s)
             res = self.s.readline()
-            if res is not None:
+            assert res is not None
+            if not res:
+                yield IOReadDone(self.s)
                 break
-            log.warn("Empty read")
-        if not res:
-            yield IOReadDone(self.s)
+            buf += res
+            if buf[-1] == 0x0a:
+                break
         if DEBUG and __debug__:
-            log.debug("StreamReader.readline(): res: %s", res)
-        return res
+            log.debug("StreamReader.readline(): %s", buf)
+        return buf
 
     def aclose(self):
         yield IOReadDone(self.s)
@@ -169,7 +183,7 @@ def open_connection(host, port):
     try:
         s.connect(addr)
     except OSError as e:
-        if e.args[0] != errno.EINPROGRESS:
+        if e.args[0] != uerrno.EINPROGRESS:
             raise
     if __debug__:
         log.debug("open_connection: After connect")
