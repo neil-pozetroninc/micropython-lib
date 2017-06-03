@@ -104,7 +104,7 @@ def request(method, url, data=None, json=None, headers={}, stream=None, debug=Fa
                 date_line = str(l[:-2:]).split(' ', 1)[1][:-1:]
             if l.startswith(b"ETag:"):
                 etag = str(l).split('"')[1].rsplit('"')[0]
-            if l.startswith(b"Content-HMAC:"):
+            if l.startswith(b"Content-HMAC:") or l.startswith(b"Content-Hmac:"):
                 content_hmac = str(l).split('"')[1].rsplit('"')[0]
             if not l or l == b"\r\n":
                 break
