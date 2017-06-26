@@ -37,16 +37,7 @@ class Response:
         return ujson.loads(self.content)
 
 
-def add_comma(iterable):
-    it = iter(iterable)
-    last = next(it)
-    for val in it:
-        yield last, ','
-        last = val
-    yield last, ''
-
-
-def request(method, url, data=None, json=None, headers={}, stream=None, debug=False, out_file=None, in_file=None, log_format=None):
+def request(method, url, data=None, json=None, headers={}, stream=None, debug=False, out_file=None, in_file=None):
     try:
         proto, dummy, host, path = url.split("/", 3)
     except ValueError:
@@ -94,20 +85,13 @@ def request(method, url, data=None, json=None, headers={}, stream=None, debug=Fa
                 print(b"Content-Length: {:d}\r\n".format(len(data)))
             s.write(b"Content-Length: {:d}\r\n".format(len(data)))
         elif in_file:
-            s.write(b'Content-Type: application/json\r\n')
+            s.write(b'Content-Type: {}\r\n'.format(headers.get('Content-Type', 'text/plain')))
             import uos
-            length = 0
-            with open(in_file, mode='r') as infile:
-                for line in infile:
-                    to_add = len(line) + 13 # add 13 for the {"text: " "}
-                    if to_add > 0:
-                        to_add = to_add - 1 # minus one for the \n
-                    length += to_add
-                length = length + 2 - 1 # Two for the brackets and minus one for the lack of comma on the last
+            length = uos.stat(in_file)[6]
+            del uos
             if debug:
                 print(b"Content-Length: {:d}\r\n".format(length))
             s.write(b"Content-Length: {:d}\r\n".format(length))
-            del(uos)
         if debug:
             print(b"\r\n")
         s.write(b"\r\n")
@@ -115,22 +99,10 @@ def request(method, url, data=None, json=None, headers={}, stream=None, debug=Fa
             if debug:
                 print(data)
             s.write(data)
-        # such hacks, much wow
-        elif in_file and log_format:
-            if debug:
-                print('[')
-            s.write('[')
-            with open(in_file, mode='r') as infile:
-                for line, comma in add_comma(infile):
-                    line = line.replace('\n','')
-                    json_line = '{"text": "'+line+'"}' + comma
-                    if debug: print(json_line)
-                    s.write(json_line)
-            if debug:
-                print(']')
-                print('Logs Flushed')
-            s.write(']')
-
+        elif in_file:
+            with open(in_file, mode='rb') as infile:
+                for l in infile:
+                    s.write(l)
 
         l = s.readline()
         protover, status, msg = l.split(None, 2)
