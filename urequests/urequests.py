@@ -60,7 +60,7 @@ def request(method, url, data=None, json=None, headers={}, stream=None, debug=Fa
         s.connect(addr)
         if proto == 'https:':
             if not SUPPORT_SSL: print('HTTPS not supported: could not find ussl')
-            s = ussl.wrap_socket(s, server_hostname=host)
+            s = ussl.wrap_socket(s)
         if debug:
             print(b"%s /%s HTTP/1.0\r\n" % (method, path))
         s.write(b"%s /%s HTTP/1.0\r\n" % (method, path))
